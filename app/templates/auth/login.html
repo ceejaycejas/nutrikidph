@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NutriKid</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            font-family: 'Poppins', sans-serif !important;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            opacity: 0;
+            animation: pageLoad 0.8s ease-out forwards;
+        }
+        
+        @keyframes pageLoad {
+            0% {
+                opacity: 0;
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* SUPER VISIBLE Container Animation */
+        .login-container {
+            opacity: 0 !important;
+            transform: scale(0.5) rotate(10deg) !important;
+            animation: containerBounceIn 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+        }
+
+        @keyframes containerBounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) rotate(10deg);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(1.05) rotate(-2deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        /* Left Form Panel - DRAMATIC Slide */
+        .form-panel {
+            opacity: 0 !important;
+            transform: translateX(-200px) !important;
+            animation: slideInLeftBig 1s ease-out 0.5s forwards !important;
+        }
+
+        @keyframes slideInLeftBig {
+            0% {
+                opacity: 0;
+                transform: translateX(-200px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Right Welcome Panel - DRAMATIC Slide */
+        .welcome-panel {
+            opacity: 0 !important;
+            transform: translateX(200px) !important;
+            animation: slideInRightBig 1s ease-out 0.5s forwards !important;
+        }
+
+        @keyframes slideInRightBig {
+            0% {
+                opacity: 0;
+                transform: translateX(200px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Title Animation - BOUNCE */
+        .form-title {
+            opacity: 0 !important;
+            transform: translateY(-50px) scale(0.5) !important;
+            animation: bounceInDown 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 1s forwards !important;
+        }
+
+        @keyframes bounceInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.5);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(10px) scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Input 1 Animation */
+        .form-input-1 {
+            opacity: 0 !important;
+            transform: translateX(-100px) !important;
+            animation: slideInLeft 0.6s ease-out 1.3s forwards !important;
+        }
+
+        /* Input 2 Animation */
+        .form-input-2 {
+            opacity: 0 !important;
+            transform: translateX(-100px) !important;
+            animation: slideInLeft 0.6s ease-out 1.5s forwards !important;
+        }
+
+        @keyframes slideInLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Remember Me Animation */
+        .form-remember {
+            opacity: 0 !important;
+            transform: translateY(30px) !important;
+            animation: fadeInUp 0.6s ease-out 1.7s forwards !important;
+        }
+
+        /* Button Animation - SUPER VISIBLE */
+        .form-submit {
+            opacity: 0 !important;
+            transform: translateY(50px) scale(0.8) !important;
+            animation: buttonBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 1.9s forwards !important;
+        }
+
+        @keyframes buttonBounce {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) scale(0.8);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-5px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input Focus Animation */
+        input:focus {
+            transform: scale(1.03) !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5) !important;
+        }
+
+        /* Button Hover - VERY OBVIOUS */
+        .login-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease !important;
+        }
+
+        .login-button:hover {
+            transform: translateY(-5px) scale(1.05) !important;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .login-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .login-button:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        /* Logo - SPINNING ENTRANCE */
+        .logo-animate {
+            opacity: 0 !important;
+            transform: scale(0) rotate(-360deg) !important;
+            animation: logoSpinIn 1.2s ease-out 1s forwards !important;
+            transition: all 0.3s ease;
+            pointer-events: none !important;
+        }
+        
+        .logo-link {
+            display: inline-block !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+            position: relative !important;
+            z-index: 999999 !important;
+            pointer-events: auto !important;
+            min-width: 96px !important;
+            min-height: 96px !important;
+        }
+        
+        .logo-link:hover .logo-animate {
+            transform: scale(1.1) rotate(10deg) !important;
+            filter: brightness(1.1) drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+        }
+        
+        .logo-link:active {
+            transform: scale(0.95) !important;
+        }
+
+        @keyframes logoSpinIn {
+            0% {
+                opacity: 0;
+                transform: scale(0) rotate(-360deg);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        /* Welcome Text - Cascade */
+        .welcome-text-1 {
+            opacity: 0 !important;
+            transform: translateY(30px) !important;
+            animation: fadeInUp 0.6s ease-out 1.4s forwards !important;
+        }
+
+        .welcome-text-2 {
+            opacity: 0 !important;
+            transform: translateY(30px) !important;
+            animation: fadeInUp 0.6s ease-out 1.6s forwards !important;
+        }
+
+        .welcome-text-3 {
+            opacity: 0 !important;
+            transform: translateY(30px) !important;
+            animation: fadeInUp 0.6s ease-out 1.8s forwards !important;
+        }
+
+        /* Alert Animation */
+        .alert-animate {
+            opacity: 0 !important;
+            transform: translateY(-30px) scale(0.9) !important;
+            animation: alertSlideDown 0.5s ease-out 0.8s forwards !important;
+        }
+
+        @keyframes alertSlideDown {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Floating Background Elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 8s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-panel {
+                transform: translateY(100px) !important;
+                animation: slideInUpBig 1s ease-out 0.5s forwards !important;
+            }
+
+            @keyframes slideInUpBig {
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // FORCE LOGO CLICKABLE IMMEDIATELY - BEFORE ANY ANIMATION
+        (function() {
+            console.log('LOGO FIX SCRIPT LOADING...');
+            
+            function makeLogoClickable() {
+                const logoLink = document.querySelector('.logo-link');
+                const logoImg = document.querySelector('.logo-animate');
+                
+                if (logoLink) {
+                    console.log('LOGO LINK FOUND!');
+                    
+                    // Remove ALL blocking styles
+                    logoLink.style.pointerEvents = 'auto';
+                    logoLink.style.cursor = 'pointer';
+                    logoLink.style.zIndex = '9999999';
+                    logoLink.style.position = 'relative';
+                    logoLink.style.display = 'block';
+                    
+                    if (logoImg) {
+                        logoImg.style.pointerEvents = 'none';
+                        logoImg.style.cursor = 'pointer';
+                    }
+                    
+                    // Force click handler
+                    logoLink.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('LOGO CLICKED - NAVIGATING!');
+                        window.location.href = '/';
+                        return false;
+                    };
+                    
+                    console.log('LOGO IS NOW CLICKABLE!');
+                } else {
+                    console.log('LOGO LINK NOT FOUND - RETRYING...');
+                    setTimeout(makeLogoClickable, 100);
+                }
+            }
+            
+            // Try immediately and after DOM loads
+            makeLogoClickable();
+            document.addEventListener('DOMContentLoaded', makeLogoClickable);
+        })();
+    </script>
+    <div class="login-container">
+        <div class="flex w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Left: Login Form (White) -->
+            <div class="form-panel w-full md:w-1/2 p-8 flex flex-col justify-center">
+                <h2 class="form-title text-3xl font-bold text-gray-800 mb-6 text-center">Sign in</h2>
+                
+                <!-- Alert Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert-animate mb-4 space-y-2">
+                            {% for category, message in messages %}
+                                <div class="p-4 rounded-lg {% if category == 'danger' %}bg-red-100 border border-red-400 text-red-700{% elif category == 'success' %}bg-green-100 border border-green-400 text-green-700{% elif category == 'warning' %}bg-yellow-100 border border-yellow-400 text-yellow-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %}" role="alert">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            {% if category == 'danger' %}
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            {% elif category == 'success' %}
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            {% else %}
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            {% endif %}
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium">{{ message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+                    <input name="email" type="email" placeholder="Email" required class="form-input-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <input name="password" type="password" placeholder="Password" required class="form-input-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <div class="form-remember flex items-center justify-between text-sm">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember" type="checkbox" class="form-checkbox text-blue-600 mr-2">
+                            <label for="remember-me" class="text-gray-600">Remember me</label>
+                        </div>
+                        <button type="button" onclick="window.location.href='/forgot-password'" class="text-blue-600 hover:text-blue-800 transition bg-transparent border-none cursor-pointer text-sm underline p-0">
+                            Forgot Password?
+                        </button>
+                    </div>
+                    <button type="submit" class="form-submit login-button w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition relative z-10">LOG IN</button>
+                </form>
+            </div>
+            <!-- Right: Welcome Panel (Blue) -->
+            <div class="welcome-panel hidden md:flex w-1/2 bg-blue-600 flex-col items-center justify-center p-8 text-white">
+                <div onclick="window.location.href='{{ url_for('main.index') }}';" style="cursor: pointer; z-index: 999999; position: relative;" title="Back to Home">
+                    <img src="{{ url_for('static', filename='img/LOGO.png') }}" alt="NutriKid Logo" class="logo-animate w-24 h-24 mb-6 rounded-full bg-white p-2" style="cursor: pointer;">
+                </div>
+                <h2 class="welcome-text-1 text-2xl font-bold mb-2">Welcome to NutriKid!</h2>
+                <p class="welcome-text-2 mb-6 text-center">School Nutrition Management System<br>Please contact your administrator for account access</p>
+                <div class="welcome-text-3 text-center text-sm opacity-75">
+                    <p>For new school registration,<br>contact the Super Administrator</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Enhanced interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // FORCE LOGO CLICKABLE
+            const logoLink = document.querySelector('.logo-link');
+            const logoImg = document.querySelector('.logo-animate');
+            
+            if (logoLink) {
+                // Make absolutely sure it's clickable
+                logoLink.style.pointerEvents = 'auto';
+                logoLink.style.cursor = 'pointer';
+                logoLink.style.zIndex = '999999';
+                
+                // Add click event listener
+                logoLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Logo clicked! Navigating to landing page...');
+                    window.location.href = '{{ url_for("main.index") }}';
+                });
+                
+                // Also on the image itself
+                if (logoImg) {
+                    logoImg.style.cursor = 'pointer';
+                    logoImg.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Logo image clicked! Navigating to landing page...');
+                        window.location.href = '{{ url_for("main.index") }}';
+                    });
+                }
+            }
+            
+            // Add ripple effect on button click
+            const loginButton = document.querySelector('.login-button');
+            if (loginButton) {
+                loginButton.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.classList.add('ripple');
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => ripple.remove(), 600);
+                });
+            }
+
+            // Add input focus animation
+            const inputs = document.querySelectorAll('input[type="email"], input[type="password"]');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'translateX(5px)';
+                    this.parentElement.style.transition = 'transform 0.3s ease';
+                });
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'translateX(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

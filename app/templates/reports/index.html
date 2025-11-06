@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .reports-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        position: relative;
+        overflow: hidden;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .reports-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        transform: rotate(45deg);
+    }
+    
+    .reports-header-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .reports-actions {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .reports-actions .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .reports-actions .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .reports-actions .btn-success {
+        background: linear-gradient(45deg, #28a745, #20c997);
+    }
+    
+    .reports-actions .btn-primary {
+        background: linear-gradient(45deg, #007bff, #6610f2);
+    }
+    
+    .reports-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        line-height: 1.2;
+    }
+    
+    .reports-header .subtitle {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        margin-top: 0.25rem;
+        line-height: 1.3;
+    }
+    
+    /* Alert Message Styling */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.5rem;
+    }
+    .alert-success {
+        background: linear-gradient(45deg, #d4edda, #c3e6cb);
+        border-left: 4px solid #28a745;
+        color: #155724;
+    }
+    .alert-danger {
+        background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+    }
+    .alert i {
+        margin-right: 0.5rem;
+    }
+    .material-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .material-card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    .material-card .card-body {
+        padding: 2rem 1.5rem 1.5rem 1.5rem;
+    }
+    /* Fade-in for header and table rows */
+    .reports-header, .material-card {
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    .material-card { animation-delay: 0.1s; }
+    .table tbody tr {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.4s ease forwards;
+    }
+    .table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+    .table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+    .table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+    .table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="container py-4">
+    
+    <!-- Header Section -->
+    <div class="reports-header">
+        <div class="reports-header-content">
+            <h2><i class="bi bi-file-earmark-text me-2"></i>Student Nutritional Records</h2>
+            <p class="subtitle">View and export student nutritional data</p>
+        </div>
+        <div class="reports-actions">
+            <a href="{{ url_for('reports.export') }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <form method="POST" action="{{ url_for('reports.send_to_super_admin') }}" style="display: inline;">
+                <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to send this report to Super Admin?')">
+                    <i class="bi bi-send"></i> Send Reports
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card material-card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Section</th>
+                            <th>Gender</th>
+                            <th>Birth Date</th>
+                            <th>Age</th>
+                            <th>Height (cm)</th>
+                            <th>Weight (kg)</th>
+                            <th>BMI</th>
+                            <th>Preferences/Allergies</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>{{ s.name }}</td>
+                            <td>{{ s.section.name if s.section else '' }}</td>
+                            <td>{{ s.gender }}</td>
+                            <td>{{ s.birth_date.strftime('%Y-%m-%d') if s.birth_date else '' }}</td>
+                            <td>{{ s.age }}</td>
+                            <td>{{ s.height }}</td>
+                            <td>{{ s.weight }}</td>
+                            <td>{{ "%.1f"|format(s.bmi) if s.bmi else '' }}</td>
+                            <td>{{ s.preferences }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -56,7 +56,7 @@ def check_email_config():
         
     print("\n✅ Email configuration looks good!")
     print("\n📝 Next steps:")
-    print("1. Restart your Flask server: Ctrl+C to stop, then 'python run.py' to start")
+    print("1. Restart your Flask server: Ctrl+C to stop, then 'python app.py' to start")
     print("2. Test by approving a password reset request")
     print("3. Check your Gmail inbox (and Spam folder) for the email")
     

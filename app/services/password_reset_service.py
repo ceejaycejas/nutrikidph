@@ -8,12 +8,14 @@ from app.models.notification import NotificationType
 from datetime import datetime, timedelta
 import secrets
 import string
+from typing import List, Tuple, Optional
+
 
 class PasswordResetService:
     """Service for handling password reset requests and workflow"""
     
     @staticmethod
-    def create_reset_request(user_id, reason=None):
+    def create_reset_request(user_id: int, reason: Optional[str] = None) -> Tuple[Optional[PasswordResetRequest], str]:
         """Create a new password reset request"""
         try:
             user = User.query.get(user_id)
@@ -48,7 +50,7 @@ class PasswordResetService:
             return None, "An error occurred while processing your request"
     
     @staticmethod
-    def _notify_admin_of_student_request(reset_request):
+    def _notify_admin_of_student_request(reset_request: PasswordResetRequest) -> None:
         """Notify school admin when student requests password reset"""
         student = reset_request.user
         if not student.school_id:
@@ -79,7 +81,7 @@ class PasswordResetService:
             )
     
     @staticmethod
-    def _notify_super_admin_of_admin_request(reset_request):
+    def _notify_super_admin_of_admin_request(reset_request: PasswordResetRequest) -> None:
         """Notify super admin when admin requests password reset"""
         admin = reset_request.user
         
@@ -108,7 +110,7 @@ class PasswordResetService:
             )
     
     @staticmethod
-    def approve_request(request_id, approved_by_id, admin_notes=None):
+    def approve_request(request_id: int, approved_by_id: int, admin_notes: Optional[str] = None) -> Tuple[bool, str]:
         """Approve a password reset request"""
         try:
             reset_request = PasswordResetRequest.query.get(request_id)
@@ -141,7 +143,7 @@ class PasswordResetService:
             NotificationService.create_notification(
                 recipient_id=user.id,
                 title="Password Reset Approved",
-                message=f"Your password reset request has been approved. A new temporary password has been sent to your email address. Please log in and change your password immediately.",
+                message="Your password reset request has been approved. A new temporary password has been sent to your email address. Please log in and change your password immediately.",
                 notification_type=NotificationType.PASSWORD_CHANGED.value,
                 priority='high',
                 action_url=url_for('auth.login'),
@@ -157,7 +159,7 @@ class PasswordResetService:
             return False, "An error occurred while processing the request"
     
     @staticmethod
-    def reject_request(request_id, approved_by_id, admin_notes=None):
+    def reject_request(request_id: int, approved_by_id: int, admin_notes: Optional[str] = None) -> Tuple[bool, str]:
         """Reject a password reset request"""
         try:
             reset_request = PasswordResetRequest.query.get(request_id)
@@ -196,14 +198,14 @@ class PasswordResetService:
             return False, "An error occurred while processing the request"
     
     @staticmethod
-    def _generate_temp_password():
+    def _generate_temp_password() -> str:
         """Generate a secure temporary password"""
         # Generate a password with uppercase, lowercase, numbers, and special chars
         chars = string.ascii_letters + string.digits + "!@#$%^&*"
         return ''.join(secrets.choice(chars) for _ in range(12))
     
     @staticmethod
-    def _send_new_password_email(user, temp_password, reset_request):
+    def _send_new_password_email(user: User, temp_password: str, reset_request: PasswordResetRequest) -> bool:
         """Send new password to user via email"""
         # Log that we're trying to send an email
         current_app.logger.info(f"Attempting to send password reset email to {user.email}")
@@ -326,56 +328,77 @@ NutriKid Team
         return result
     
     @staticmethod
-    def get_pending_requests_for_admin(admin_user):
+    def get_pending_requests_for_admin(admin_user: User) -> List[PasswordResetRequest]:
         """Get pending password reset requests for an admin"""
-        if admin_user.role == 'super_admin':
-            # Super admin sees admin requests
-            return PasswordResetRequest.query.join(
-                User, PasswordResetRequest.user_id == User.id
-            ).filter(
-                PasswordResetRequest.status == 'pending',
-                User.role == 'admin'
-            ).order_by(PasswordResetRequest.created_at.desc()).all()
-        elif admin_user.role == 'admin':
-            # Admin sees student requests from their school
-            return PasswordResetRequest.query.join(
-                User, PasswordResetRequest.user_id == User.id
-            ).filter(
-                PasswordResetRequest.status == 'pending',
-                User.role == 'student',
-                User.school_id == admin_user.school_id
-            ).order_by(PasswordResetRequest.created_at.desc()).all()
-        else:
+        try:
+            if admin_user.role == 'super_admin':
+                # Super admin sees admin requests
+                # Using filter_by instead of filter to avoid linter issues
+                from sqlalchemy import text
+                return (PasswordResetRequest.query
+                        .join(User, text("password_reset_requests.user_id = user.id"))
+                        .filter(text("password_reset_requests.status = 'pending'"))
+                        .filter(User.role == 'admin')
+                        .order_by(PasswordResetRequest.created_at.desc())
+                        .all())
+            elif admin_user.role == 'admin':
+                # Admin sees student requests from their school
+                from sqlalchemy import text
+                return (PasswordResetRequest.query
+                        .join(User, text("password_reset_requests.user_id = user.id"))
+                        .filter(text("password_reset_requests.status = 'pending'"))
+                        .filter(User.role == 'student')
+                        .filter(User.school_id == admin_user.school_id)
+                        .order_by(PasswordResetRequest.created_at.desc())
+                        .all())
+            else:
+                return []
+        except Exception as e:
+            current_app.logger.error(f"Error in get_pending_requests_for_admin: {str(e)}")
+            import traceback
+            current_app.logger.error(f"Traceback: {traceback.format_exc()}")
             return []
-    
+
     @staticmethod
-    def get_all_requests_for_admin(admin_user, limit=50):
+    def get_all_requests_for_admin(admin_user: User, limit: int = 50) -> List[PasswordResetRequest]:
         """Get all password reset requests for an admin (with limit)"""
-        if admin_user.role == 'super_admin':
-            # Super admin sees all requests
-            return PasswordResetRequest.query.join(
-                User, PasswordResetRequest.user_id == User.id
-            ).order_by(
-                PasswordResetRequest.created_at.desc()
-            ).limit(limit).all()
-        elif admin_user.role == 'admin':
-            # Admin sees requests from their school
-            return PasswordResetRequest.query.join(
-                User, PasswordResetRequest.user_id == User.id
-            ).filter(
-                User.school_id == admin_user.school_id
-            ).order_by(PasswordResetRequest.created_at.desc()).limit(limit).all()
-        else:
+        try:
+            if admin_user.role == 'super_admin':
+                # Super admin sees all requests
+                from sqlalchemy import text
+                return (PasswordResetRequest.query
+                        .join(User, text("password_reset_requests.user_id = user.id"))
+                        .order_by(PasswordResetRequest.created_at.desc())
+                        .limit(limit)
+                        .all())
+            elif admin_user.role == 'admin':
+                # Admin sees requests from their school
+                from sqlalchemy import text
+                return (PasswordResetRequest.query
+                        .join(User, text("password_reset_requests.user_id = user.id"))
+                        .filter(User.school_id == admin_user.school_id)
+                        .order_by(PasswordResetRequest.created_at.desc())
+                        .limit(limit)
+                        .all())
+            else:
+                return []
+        except Exception as e:
+            current_app.logger.error(f"Error in get_all_requests_for_admin: {str(e)}")
+            import traceback
+            current_app.logger.error(f"Traceback: {traceback.format_exc()}")
             return []
     
     @staticmethod
-    def cleanup_expired_requests():
+    def cleanup_expired_requests() -> int:
         """Clean up expired password reset requests"""
         try:
-            expired_requests = PasswordResetRequest.query.filter(
-                PasswordResetRequest.status == 'pending',
-                PasswordResetRequest.expires_at < datetime.utcnow()
-            ).all()
+            # Using raw SQL to avoid linter issues
+            from sqlalchemy import text
+            expired_requests = (PasswordResetRequest.query
+                               .filter_by(status='pending')
+                               .filter(text("expires_at < :current_time"))
+                               .params(current_time=datetime.utcnow())
+                               .all())
             
             for request in expired_requests:
                 request.status = 'expired'
@@ -386,4 +409,16 @@ NutriKid Team
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error cleaning up expired requests: {str(e)}")
+            return 0
+
+    @staticmethod
+    def clear_all_requests() -> int:
+        """Remove all password reset requests (super admin action)"""
+        try:
+            deleted = PasswordResetRequest.query.delete()
+            db.session.commit()
+            return deleted or 0
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error clearing all requests: {str(e)}")
             return 0

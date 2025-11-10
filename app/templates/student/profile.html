@@ -1,48 +1,6 @@
 {% extends "base.html" %}
 
 {% block dashboard_profile %}
-<div class="dashboard-profile-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3); display: flex; align-items: center; justify-content: space-between; color: white;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        {% if current_user.profile_image %}
-        <img src="{{ url_for('static', filename=current_user.profile_image) }}" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; object-fit: contain; object-position: center; border: 3px solid white; padding: 0; flex-shrink: 0; display: block; background: white;">
-        {% else %}
-        <img src="{{ url_for('static', filename='img/LOGO1.png') }}" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid white;">
-        {% endif %}
-        <div>
-            <h5 style="margin: 0; color: white; font-weight: 600;">{{ current_user.name }}</h5>
-            <span class="role-badge role-{{ current_user.role }}">
-                <i class="bi bi-mortarboard"></i> Student
-            </span>
-        </div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        {% set unread = current_user.notifications|selectattr('is_read', 'equalto', False)|list|length %}
-        <a href="{{ url_for('account.notifications') }}" style="position: relative; color: white; opacity: 1; text-decoration: none; font-size: 1.2rem; transition: color 0.2s ease;">
-            <i class="bi bi-bell"></i>
-            {% if unread > 0 %}
-            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="font-size:0.6em; z-index:10;"></span>
-            {% endif %}
-        </a>
-        
-        <!-- Profile Dropdown -->
-        <div class="profile-dropdown" id="profileDropdown" style="position: relative;">
-            <button class="profile-btn" onclick="toggleDropdown(event)" style="background: transparent; border: none; color: white !important; opacity: 1; cursor: pointer; font-size: 1.2rem; padding: 0.25rem; transition: color 0.2s ease; text-shadow: 0 0 2px rgba(0,0,0,0.3); filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));">
-                <i class="bi bi-caret-down-fill" style="color: white !important; text-shadow: 0 0 2px rgba(0,0,0,0.3);"></i>
-            </button>
-            <div class="dropdown-menu profile-menu" id="dropdownMenu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; z-index: 1000; margin-top: 0.5rem;">
-                <a href="{{ url_for('main.index') }}" style="display: flex; align-items: center; padding: 0.75rem 1rem; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #f8f9fa;">
-                    <i class="bi bi-house" style="margin-right: 0.5rem;"></i> Home
-                </a>
-                <a href="{{ url_for('account.settings') }}" style="display: flex; align-items: center; padding: 0.75rem 1rem; color: #2c3e50; text-decoration: none; border-bottom: 1px solid #f8f9fa;">
-                    <i class="bi bi-gear" style="margin-right: 0.5rem;"></i> Settings
-                </a>
-                <a href="{{ url_for('auth.logout') }}" class="logout" style="display: flex; align-items: center; padding: 0.75rem 1rem; color: #dc3545; text-decoration: none;">
-                    <i class="bi bi-box-arrow-right" style="margin-right: 0.5rem;"></i> Logout
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block content %}
@@ -50,7 +8,7 @@
     .profile-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
-        padding: 2rem 0;
+        padding: 1rem 0;
     }
     
     .profile-card {
@@ -215,83 +173,6 @@
         }
     }
     
-    /* Profile Dropdown Styles */
-    .profile-dropdown {
-        position: relative;
-        display: inline-block;
-    }
-    
-    .profile-btn:hover {
-        color: white !important;
-        transform: scale(1.1);
-        transition: all 0.2s ease;
-        animation: none !important;
-        text-shadow: 0 0 4px rgba(0,0,0,0.5) !important;
-        filter: drop-shadow(0 0 2px rgba(0,0,0,0.7)) !important;
-    }
-    
-    .profile-btn:hover i {
-        color: white !important;
-        text-shadow: 0 0 4px rgba(0,0,0,0.5) !important;
-    }
-    
-    .dashboard-profile-header a:hover {
-        color: white !important;
-        animation: bellShake 0.5s ease-in-out;
-        transform: scale(1.1);
-        transition: all 0.2s ease;
-    }
-    
-    @keyframes bellShake {
-        0%, 100% { transform: scale(1.1) rotate(0deg); }
-        25% { transform: scale(1.1) rotate(-10deg); }
-        50% { transform: scale(1.1) rotate(10deg); }
-        75% { transform: scale(1.1) rotate(-5deg); }
-    }
-    
-    .profile-dropdown.open .profile-menu {
-        display: block !important;
-        animation: fadeInMenu 0.2s ease;
-    }
-    
-    .profile-menu a:hover {
-        background-color: #f8f9fa !important;
-        color: #4CAF50 !important;
-        transition: none !important;
-        animation: none !important;
-    }
-    
-    .profile-menu a.logout:hover {
-        background-color: #fff5f5 !important;
-        color: #dc3545 !important;
-        transition: none !important;
-        animation: none !important;
-    }
-    
-    @keyframes fadeInMenu {
-        from { 
-            opacity: 0; 
-            transform: translateY(-10px); 
-        }
-        to { 
-            opacity: 1; 
-            transform: translateY(0); 
-        }
-    }
-    
-    /* Role Badge Styles for Gradient Background */
-    .dashboard-profile-header .role-badge {
-        background: white !important;
-        color: #667eea !important;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        margin-top: 0.25rem;
-    }
 </style>
 
 <div class="profile-container">
@@ -368,21 +249,6 @@
 </div>
 
 <script>
-// Profile dropdown functionality
-function toggleDropdown(event) {
-    event.stopPropagation();
-    const dropdown = document.getElementById('profileDropdown');
-    dropdown.classList.toggle('open');
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('profileDropdown');
-    if (!dropdown.contains(event.target)) {
-        dropdown.classList.remove('open');
-    }
-});
-
 // Enhanced form interactions
 document.addEventListener('DOMContentLoaded', function() {
     // Add focus effects to form controls

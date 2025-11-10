@@ -238,60 +238,24 @@
         </div>
     </div>
     
-    <!-- Students Data -->
-    {% if students %}
+    <!-- Report Files (Excel / PDF) -->
     <div class="info-card">
-        <div class="info-card-header">
-            <h4><i class="bi bi-people me-2"></i>Students Included in Report ({{ students|length }})</h4>
+        <div class="info-card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Download Full Report Files</h4>
         </div>
-        <div class="students-table">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Section</th>
-                            <th>Gender</th>
-                            <th>Age</th>
-                            <th>Height (cm)</th>
-                            <th>Weight (kg)</th>
-                            <th>BMI</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                        <tr>
-                            <td>{{ student.name }}</td>
-                            <td>{{ student.section.name if student.section else 'N/A' }}</td>
-                            <td>{{ student.gender }}</td>
-                            <td>{{ student.age }}</td>
-                            <td>{{ student.height }}</td>
-                            <td>{{ student.weight }}</td>
-                            <td>{{ "%.1f"|format(student.bmi) if student.bmi else 'N/A' }}</td>
-                            <td>
-                                {% if student.bmi %}
-                                    {% if student.bmi < 16 %}
-                                        <span class="badge bg-danger">Severely Underweight</span>
-                                    {% elif student.bmi < 18.5 %}
-                                        <span class="badge bg-warning">Underweight</span>
-                                    {% elif student.bmi < 25 %}
-                                        <span class="badge bg-success">Normal</span>
-                                    {% else %}
-                                        <span class="badge bg-info">Overweight</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-secondary">N/A</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="info-card-body d-flex flex-wrap gap-2">
+            {% if school %}
+            <a class="btn btn-success" href="{{ url_for('super_admin.export_school_excel', school_id=school.id) }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel (.xlsx)
+            </a>
+            <a class="btn btn-primary" href="{{ url_for('super_admin.export_school_pdf', school_id=school.id) }}">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF (.pdf)
+            </a>
+            {% else %}
+            <span class="text-muted">No school is associated with this report.</span>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
     
     <!-- Back Button -->
     <div class="text-center mt-4">

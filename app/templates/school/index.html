@@ -652,36 +652,44 @@
         </a>
         {% endif %}
     </div>
+<script>
+// Auto-submit search with debounce so results update without pressing Enter
+(function() {
+    const input = document.getElementById('schoolSearch');
+    if (!input) return;
+    let t;
+    input.addEventListener('input', function() {
+        clearTimeout(t);
+        t = setTimeout(function() {
+            const params = new URLSearchParams(window.location.search);
+            const val = input.value || '';
+            if (val) {
+                params.set('search_query', val);
+            } else {
+                params.delete('search_query');
+            }
+            const url = window.location.pathname + '?' + params.toString();
+            window.location.assign(url);
+        }, 350);
+    });
+})();
+</script>
     
-    <!-- Stats Bar -->
+    <!-- Actions Bar (Search left, Add button right when super admin) -->
     <div class="stats-bar">
-        <div class="stats-left">
-            <div class="stats-item">
-                <span class="stats-number">{{ schools|length }}</span>
-                <span class="stats-label">Total Schools</span>
+        <div class="action-buttons" style="display:flex;align-items:center;gap:1rem;justify-content:space-between;width:100%;">
+            <div class="search-container" style="flex:1;display:flex;align-items:center;gap:1rem;">
+                <form action="{{ url_for('school.index') }}" method="GET" class="search-box mb-0" style="background:white;border-radius:12px;padding:0.75rem 1rem;display:flex;align-items:center;width:100%;max-width:820px;border:2px solid #f1f3f4;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin:0;">
+                    <i class="bi bi-search" style="color:#4facfe;font-size:1.1rem;"></i>
+                    <input id="schoolSearch" type="text" placeholder="Search schools..." name="search_query" value="{{ request.args.get('search_query','') }}" style="border:none;outline:none;background:transparent;width:100%;margin-left:0.5rem;font-size:0.95rem;">
+                    <button type="submit" style="display:none;"></button>
+                </form>
             </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set active_count = 0 %}
-                    {% for school in schools %}
-                        {% if school.users|length > 0 %}
-                            {% set active_count = active_count + 1 %}
-                        {% endif %}
-                    {% endfor %}
-                    {{ active_count }}
-                </span>
-                <span class="stats-label">Active Schools</span>
-            </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set total_students = 0 %}
-                    {% for school in schools %}
-                        {% set total_students = total_students + school.students|length %}
-                    {% endfor %}
-                    {{ total_students }}
-                </span>
-                <span class="stats-label">Total Students</span>
-            </div>
+            {% if current_user.role == 'super_admin' %}
+            <a href="{{ url_for('school.create') }}" class="btn btn-add-school" style="background:linear-gradient(135deg,#4facfe,#00f2fe);border:none;color:white;padding:0.75rem 1.5rem;border-radius:12px;font-weight:600;display:inline-flex;align-items:center;gap:0.5rem;box-shadow:0 4px 12px rgba(79,172,254,0.3);text-decoration:none;">
+                <i class="bi bi-building-add"></i> Add New School
+            </a>
+            {% endif %}
         </div>
     </div>
     

@@ -215,12 +215,15 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        justify-content: space-between; /* place search left and button right */
+        width: 100%;
     }
     
     .search-container {
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex: 1; /* allow search area to grow and fill remaining space */
     }
     
     .search-box {
@@ -229,7 +232,8 @@
         padding: 0.75rem 1rem;
         display: flex;
         align-items: center;
-        width: 300px;
+        width: 100%;            /* take full width of the container */
+        max-width: 820px;       /* but keep a sensible max width */
         border: 2px solid #f1f3f4;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         transition: all 0.3s ease;
@@ -588,38 +592,8 @@
         </div>
     </div>
     
-    <!-- Stats Bar -->
+    <!-- Actions Bar (Search left, Add button right) -->
     <div class="stats-bar">
-        <div class="stats-left">
-            <div class="stats-item">
-                <span class="stats-number">{{ admins|length }}</span>
-                <span class="stats-label">Total Admins</span>
-            </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set active_schools = [] %}
-                    {% for admin in admins %}
-                        {% if admin.school and admin.school.id not in active_schools %}
-                            {% set _ = active_schools.append(admin.school.id) %}
-                        {% endif %}
-                    {% endfor %}
-                    {{ active_schools|length }}
-                </span>
-                <span class="stats-label">Active Schools</span>
-            </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set recent_count = 0 %}
-                    {% for admin in admins %}
-                        {% if admin.created_at and (admin.created_at.date() == moment().date() if moment else false) %}
-                            {% set recent_count = recent_count + 1 %}
-                        {% endif %}
-                    {% endfor %}
-                    {{ recent_count }}
-                </span>
-                <span class="stats-label">Added Today</span>
-            </div>
-        </div>
         <div class="action-buttons">
             <div class="search-container">
                 <form action="{{ url_for('super_admin.admins') }}" method="GET" class="search-box mb-0">

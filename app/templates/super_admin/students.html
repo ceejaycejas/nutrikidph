@@ -625,14 +625,18 @@
     
     <!-- Students List -->
     {% if students_by_school %}
-        {% for school_name, students in students_by_school.items() %}
-        <div class="school-section">
-            <div class="school-header">
-                <h3><i class="bi bi-building me-2"></i>{{ school_name }}</h3>
-                <span class="student-count">{{ students|length }} student{{ 's' if students|length != 1 else '' }}</span>
+        {% for school_id, group in students_by_school.items() %}
+        <div class="school-section" data-school-id="{{ school_id }}">
+            <div class="school-header toggle-school" role="button" aria-expanded="false">
+                <h3><i class="bi bi-building me-2"></i>{{ group.name }}</h3>
+                {% if group.students|length > 0 %}
+                <span class="student-count">{{ group.students|length }} student{{ 's' if group.students|length != 1 else '' }}</span>
+                {% else %}
+                <span class="student-count" style="background:#95a5a6;">No students enrolled yet</span>
+                {% endif %}
             </div>
-            <div class="student-card">
-                {% for student in students %}
+            <div class="student-card school-students" style="display:none;">
+                {% for student in group.students %}
                 <div class="student-item">
                     <div class="student-info">
                         <div class="student-avatar">
@@ -740,18 +744,31 @@ document.getElementById('searchInput').addEventListener('input', function() {
     });
 });
 
-// School filter functionality
+// School filter functionality (by id)
 document.getElementById('schoolFilter').addEventListener('change', function() {
     const selectedSchool = this.value;
     const schoolSections = document.querySelectorAll('.school-section');
     
     schoolSections.forEach(section => {
-        const schoolName = section.querySelector('.school-header h3').textContent.trim();
-        
-        if (!selectedSchool || schoolName.includes(selectedSchool)) {
+        const sid = section.getAttribute('data-school-id');
+        if (!selectedSchool || selectedSchool === sid) {
             section.style.display = 'block';
         } else {
             section.style.display = 'none';
+        }
+    });
+});
+
+// Collapse/expand students under each school
+document.querySelectorAll('.toggle-school').forEach(header => {
+    header.addEventListener('click', function() {
+        const card = this.nextElementSibling;
+        const expanded = this.getAttribute('aria-expanded') === 'true';
+        this.setAttribute('aria-expanded', !expanded);
+        if (expanded) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = 'block';
         }
     });
 });

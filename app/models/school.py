@@ -6,6 +6,7 @@ class School(db.Model):
     address = db.Column(db.String(200))
     contact_number = db.Column(db.String(20))
     email = db.Column(db.String(120))
+    logo = db.Column(db.String(256), nullable=True)  # Path to school logo image
     users = db.relationship('User', backref='school', lazy=True)
     students = db.relationship('Student', backref='school', lazy=True) 
     # Add missing relationships so related models have .school available

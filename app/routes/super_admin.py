@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User
@@ -8,6 +8,13 @@ from app.models.student import Student
 from datetime import datetime
 from app.routes.school import log_activity
 from app.services.notification_service import NotificationService
+import io
+import xlsxwriter
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 
 bp = Blueprint('super_admin', __name__, url_prefix='/super-admin')
 
@@ -446,13 +453,19 @@ def students():
     # Get all students (no pagination for grouped view)
     students = query.all()
     
-    # Group students by school for better organization
+    # Group students by school for better organization (include school id and name)
     students_by_school = {}
     for student in students:
+        school_id = student.school.id if student.school else 0
         school_name = student.school.name if student.school else 'No School'
-        if school_name not in students_by_school:
-            students_by_school[school_name] = []
-        students_by_school[school_name].append(student)
+        if school_id not in students_by_school:
+            students_by_school[school_id] = {'name': school_name, 'students': []}
+        students_by_school[school_id]['students'].append(student)
+    
+    # Ensure schools with zero students are also listed
+    for school in schools:
+        if school.id not in students_by_school:
+            students_by_school[school.id] = {'name': school.name, 'students': []}
     
     # Stats
     total_students = Student.query.count()
@@ -803,6 +816,101 @@ def delete_report_notification(notification_id):
     return redirect(url_for('super_admin.reports'))
     return redirect(url_for('super_admin.reports'))
 
+# --- EXPORT SCHOOL REPORT FILES (SUPER ADMIN) ---
+@bp.route('/reports/school/<int:school_id>/export')
+@login_required
+def export_school_excel(school_id):
+    if current_user.role != 'super_admin':
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('school.dashboard'))
+
+    school = School.query.get_or_404(school_id)
+    students = Student.query.filter_by(school_id=school_id).all()
+
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet('Students')
+
+    header = workbook.add_format({'bold': True, 'bg_color': '#667eea', 'font_color': 'white'})
+    center = workbook.add_format({'align': 'center'})
+
+    headers = ['Name', 'Section', 'Gender', 'Birthdate', 'Age', 'Height (cm)', 'Weight (kg)', 'BMI']
+    for col, h in enumerate(headers):
+        worksheet.write(0, col, h, header)
+
+    row = 1
+    for s in students:
+        worksheet.write(row, 0, s.name or '')
+        worksheet.write(row, 1, s.section.name if s.section else '')
+        worksheet.write(row, 2, s.gender or '', center)
+        worksheet.write(row, 3, s.birth_date.strftime('%Y-%m-%d') if s.birth_date else '', center)
+        worksheet.write(row, 4, s.age if hasattr(s, 'age') and s.age is not None else '', center)
+        worksheet.write(row, 5, s.height if s.height is not None else '', center)
+        worksheet.write(row, 6, s.weight if s.weight is not None else '', center)
+        worksheet.write(row, 7, s.bmi if s.bmi is not None else '', center)
+        row += 1
+
+    worksheet.set_column(0, 0, 28)
+    worksheet.set_column(1, 1, 22)
+    worksheet.set_column(2, 7, 14)
+
+    workbook.close()
+    output.seek(0)
+
+    filename = f'{school.name.replace(" ", "_")}_students.xlsx'
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     download_name=filename, as_attachment=True)
+
+@bp.route('/reports/school/<int:school_id>/export_pdf')
+@login_required
+def export_school_pdf(school_id):
+    if current_user.role != 'super_admin':
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('school.dashboard'))
+
+    school = School.query.get_or_404(school_id)
+    students = Student.query.filter_by(school_id=school_id).all()
+
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    flow = []
+
+    flow.append(Paragraph(f'Student Report - {school.name}', styles['Title']))
+    flow.append(Spacer(1, 12))
+
+    data = [['Name', 'Section', 'Gender', 'Birthdate', 'Age', 'Height (cm)', 'Weight (kg)', 'BMI']]
+    for s in students:
+        data.append([
+            s.name or '',
+            s.section.name if s.section else '',
+            s.gender or '',
+            s.birth_date.strftime('%Y-%m-%d') if s.birth_date else '',
+            s.age if hasattr(s, 'age') and s.age is not None else '',
+            s.height if s.height is not None else '',
+            s.weight if s.weight is not None else '',
+            f'{s.bmi:.1f}' if s.bmi is not None else ''
+        ])
+
+    tbl = Table(data, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e9eefb')),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('GRID', (0,0), (-1,-1), 0.25, colors.grey),
+        ('ALIGN', (2,1), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fafbff')]),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+    ]))
+    flow.append(tbl)
+
+    doc.build(flow)
+    output.seek(0)
+
+    filename = f'{school.name.replace(" ", "_")}_students.pdf'
+    return send_file(output, mimetype='application/pdf', download_name=filename, as_attachment=True)
 @bp.route('/schools')
 @login_required
 def schools():
@@ -811,11 +919,15 @@ def schools():
         flash('Unauthorized access', 'danger')
         return redirect(url_for('school.dashboard'))
     
-    search_query = request.args.get('search_query', '')
+    search_query = request.args.get('search_query', '').strip()
     schools_query = School.query
     
     if search_query:
-        schools_query = schools_query.filter(School.name.contains(search_query))
+        like = f"%{search_query}%"
+        # Case-insensitive match on name or address
+        schools_query = schools_query.filter(
+            (School.name.ilike(like)) | (School.address.ilike(like))
+        )
     
     schools = schools_query.all()
     return render_template('super_admin/schools.html', schools=schools, search_query=search_query)

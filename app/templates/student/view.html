@@ -414,9 +414,19 @@
         {% if current_user.role == 'admin' %}
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button type="button" class="btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                <i class="bi bi-x-circle"></i> Cancel
-            </button>
+            {% if referrer == 'beneficiary' %}
+                <a href="{{ url_for('beneficiary.index') }}" class="btn-delete">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            {% elif current_user.role == 'super_admin' %}
+                <a href="{{ url_for('super_admin.students') }}" class="btn-delete">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            {% else %}
+                <a href="{{ url_for('section.students', section_id=student.section_id) }}" class="btn-delete">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            {% endif %}
             <a href="{{ url_for('student.edit', student_id=student.id, from=referrer) if referrer else url_for('student.edit', student_id=student.id) }}" class="btn-edit">
                 <i class="bi bi-pencil-square"></i> Edit Student
             </a>

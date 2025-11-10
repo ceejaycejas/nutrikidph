@@ -14,9 +14,11 @@
                     <span class="badge bg-warning fs-6">
                         {{ pending_requests|length }} Pending
                     </span>
-                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="cleanupExpired()">
-                        <i class="bi bi-trash"></i> Cleanup Expired
-                    </button>
+                    <form id="clearAllForm" action="{{ url_for('password_reset.clear_all') }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger btn-sm ms-2">
+                            <i class="bi bi-trash"></i> Clear All Requests
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -558,3 +560,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('clearAllForm');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+        if (!confirm('This will delete ALL password reset requests. Continue?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>

@@ -54,12 +54,24 @@ def admin_requests():
         flash('Unauthorized access', 'danger')
         return redirect(url_for('school.dashboard'))
     
-    pending_requests = PasswordResetService.get_pending_requests_for_admin(current_user)
-    all_requests = PasswordResetService.get_all_requests_for_admin(current_user, limit=20)
-    
-    return render_template('password_reset/admin_requests.html', 
-                         pending_requests=pending_requests,
-                         all_requests=all_requests)
+    try:
+        # Type cast current_user to satisfy type checker
+        from app.models.user import User
+        admin_user: User = current_user  # type: ignore
+        
+        pending_requests = PasswordResetService.get_pending_requests_for_admin(admin_user)
+        all_requests = PasswordResetService.get_all_requests_for_admin(admin_user, limit=20)
+        
+        return render_template('password_reset/admin_requests.html', 
+                             pending_requests=pending_requests,
+                             all_requests=all_requests)
+    except Exception as e:
+        # Log the error for debugging
+        current_app.logger.error(f"Error in admin_requests: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('An error occurred while loading the password reset requests. Please try again.', 'danger')
+        return redirect(url_for('school.dashboard'))
 
 @bp.route('/super-admin/requests')
 @login_required
@@ -69,12 +81,24 @@ def super_admin_requests():
         flash('Unauthorized access', 'danger')
         return redirect(url_for('school.dashboard'))
     
-    pending_requests = PasswordResetService.get_pending_requests_for_admin(current_user)
-    all_requests = PasswordResetService.get_all_requests_for_admin(current_user, limit=50)
-    
-    return render_template('password_reset/super_admin_requests.html',
-                         pending_requests=pending_requests,
-                         all_requests=all_requests)
+    try:
+        # Type cast current_user to satisfy type checker
+        from app.models.user import User
+        admin_user: User = current_user  # type: ignore
+        
+        pending_requests = PasswordResetService.get_pending_requests_for_admin(admin_user)
+        all_requests = PasswordResetService.get_all_requests_for_admin(admin_user, limit=50)
+        
+        return render_template('password_reset/super_admin_requests.html',
+                             pending_requests=pending_requests,
+                             all_requests=all_requests)
+    except Exception as e:
+        # Log the error for debugging
+        current_app.logger.error(f"Error in super_admin_requests: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        flash(f'An error occurred while loading the password reset requests: {str(e)}. Please try again.', 'danger')
+        return redirect(url_for('school.dashboard'))
 
 @bp.route('/approve/<int:request_id>', methods=['POST'])
 @login_required
@@ -182,6 +206,20 @@ def cleanup_expired():
         'success': True,
         'message': f'Cleaned up {cleaned_count} expired requests'
     })
+
+@bp.route('/clear-all', methods=['POST'])
+@login_required
+def clear_all():
+    """Clear all password reset requests (Super admin only)"""
+    if current_user.role != 'super_admin':
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('password_reset.super_admin_requests'))
+    
+    cleared = PasswordResetService.clear_all_requests()
+    
+    # Always redirect for form submissions
+    flash(f'Successfully cleared {cleared} password reset request(s).', 'success')
+    return redirect(url_for('password_reset.super_admin_requests'))
 
 # Add to auth routes - forgot password link
 @bp.route('/forgot-password')

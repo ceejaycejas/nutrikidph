@@ -43,8 +43,44 @@ def view(student_id):
     referrer = request.args.get('from', '')
     
     # Check if user is admin of the same school or the student themselves
-    if current_user.role == 'admin' and student.section.school_id == current_user.school_id:
-        return render_template('student/view.html', student=student, referrer=referrer)
+    if current_user.role == 'admin':
+        # Ensure student has school_id set (fix for legacy data)
+        if not student.school_id and student.section and student.section.school_id:
+            student.school_id = student.section.school_id
+            from app import db
+            db.session.add(student)
+            db.session.commit()
+        
+        # Get student's school_id (check multiple sources)
+        student_school_id = student.school_id
+        if not student_school_id and student.section:
+            student_school_id = student.section.school_id
+        
+        # Allow access if:
+        # 1. Admin has school_id and student belongs to that school (primary check - via school_id or section)
+        # 2. Admin registered the student (fallback for legacy data or when school_id is missing)
+        can_view = False
+        
+        if current_user.school_id:
+            # Primary check: student belongs to admin's school (via school_id)
+            if student_school_id and student_school_id == current_user.school_id:
+                can_view = True
+            # Check via section if student doesn't have school_id set
+            elif student.section and student.section.school_id == current_user.school_id:
+                can_view = True
+            # Fallback: allow if admin registered the student (for legacy data or edge cases)
+            elif student.registered_by and student.registered_by == current_user.id:
+                can_view = True
+        else:
+            # Admin has no school_id: allow if they registered the student
+            if student.registered_by and student.registered_by == current_user.id:
+                can_view = True
+        
+        if can_view:
+            return render_template('student/view.html', student=student, referrer=referrer)
+        else:
+            flash('Unauthorized access', 'danger')
+            return redirect(url_for('school.dashboard'))
     elif current_user.role == 'student' and current_user.id == student.user_id:
         return render_template('student/view.html', student=student, referrer=referrer)
     elif current_user.role == 'super_admin':

@@ -35,7 +35,7 @@ MAIL_PASSWORD=your-16-character-app-password
 
 ### 4. Restart the Application
 1. Stop the Flask server (Ctrl+C)
-2. Start it again: `python run.py`
+2. Start it again: `python app.py`
 
 ### 5. Test the Email Functionality
 1. Request a password reset for a user account

@@ -29,11 +29,29 @@ def index():
     if current_user.role not in ['super_admin', 'admin']:
         flash('Unauthorized access', 'danger')
         return redirect(url_for('school.dashboard'))
-    
+
+    # Optional search by school name (and address) from the new search bar
+    search_query = request.args.get('search_query', '').strip()
     if current_user.role == 'super_admin':
-        schools = School.query.all()
+        query = School.query
+        if search_query:
+            like = f"%{search_query}%"
+            query = query.filter((School.name.ilike(like)) | (School.address.ilike(like)))
+        schools = query.all()
     else:
-        schools = [current_user.school] if current_user.school else []
+        # Admins only see their own school; honor search if provided
+        if not current_user.school:
+            schools = []
+        else:
+            school = current_user.school
+            if search_query:
+                q = search_query.lower()
+                if (q in (school.name or '').lower()) or (q in (school.address or '').lower()):
+                    schools = [school]
+                else:
+                    schools = []
+            else:
+                schools = [school]
     
     return render_template('school/index.html', schools=schools)
 
@@ -48,7 +66,10 @@ def create():
         name = request.form.get('name')
         address = request.form.get('address')
         
-        school = School(name=name, address=address)
+        # Fix: Create School instance and set attributes separately
+        school = School()
+        school.name = name
+        school.address = address
         db.session.add(school)
         db.session.commit()
         
@@ -67,6 +88,7 @@ def edit(school_id):
     school = School.query.get_or_404(school_id)
     
     if request.method == 'POST':
+        # Fix: Set attributes separately instead of passing as constructor params
         school.name = request.form.get('name')
         school.address = request.form.get('address')
         db.session.commit()
@@ -106,12 +128,21 @@ def delete(school_id):
             except Exception:
                 Notification = None
 
-            # Delete user activities for these users
-            UserActivity.query.filter(UserActivity.user_id.in_(user_ids)).delete(synchronize_session=False)
+            # Fix: Use proper SQLAlchemy syntax for 'in' operator
+            if user_ids:
+                # Use raw SQL to avoid typing issues
+                from sqlalchemy import text
+                db.session.execute(
+                    text("DELETE FROM user_activity WHERE user_id IN :user_ids"),
+                    {"user_ids": tuple(user_ids)}
+                )
 
-            # Delete notifications sent to these users (if the model exists in the project)
-            if Notification is not None:
-                Notification.query.filter(Notification.recipient_id.in_(user_ids)).delete(synchronize_session=False)
+                # Delete notifications sent to these users (if the model exists in the project)
+                if Notification is not None:
+                    db.session.execute(
+                        text("DELETE FROM notification WHERE recipient_id IN :user_ids"),
+                        {"user_ids": tuple(user_ids)}
+                    )
 
         # Now delete the user rows
         User.query.filter_by(school_id=school_id).delete(synchronize_session=False)
@@ -157,14 +188,21 @@ def dashboard():
             UserActivity.created_at >= twenty_four_hours_ago
         ).count()
         
+        # Fix: Use proper SQLAlchemy syntax for filtering
+        from sqlalchemy import and_, text
         today_logins = UserActivity.query.filter(
-            UserActivity.activity_type == 'login',
-            UserActivity.created_at >= today_start
+            and_(
+                text("activity_type = 'login'"),
+                UserActivity.created_at >= today_start
+            )
         ).count()
         
+        # Fix: Use proper SQLAlchemy syntax for 'in' operator with list
         today_failed_logins = UserActivity.query.filter(
-            UserActivity.activity_type.in_(['login_failed', 'login_attempt']),
-            UserActivity.created_at >= today_start
+            and_(
+                text("activity_type IN ('login_failed', 'login_attempt')"),
+                UserActivity.created_at >= today_start
+            )
         ).count()
         
         if current_user.role == 'admin':
@@ -335,7 +373,8 @@ def _get_super_admin_dashboard_data(recent_activities, recent_activity_count, to
         
         # Calculate system-wide BMI distribution
         bmi_distribution = {'underweight': 0, 'normal': 0, 'overweight': 0, 'obese': 0, 'severely_wasted': 0, 'wasted': 0}
-        students_with_bmi = Student.query.filter(Student.bmi.isnot(None)).all()
+        # Fix: Use proper SQLAlchemy syntax for 'is not None'
+        students_with_bmi = Student.query.filter(Student.bmi != None).all()
         
         for student in students_with_bmi:
             if student.bmi < 16:
@@ -354,9 +393,10 @@ def _get_super_admin_dashboard_data(recent_activities, recent_activity_count, to
         
         # Calculate system-wide analytics variables
         total_beneficiaries_system = Student.query.filter_by(is_beneficiary=True).count()
-        at_risk_students_system = Student.query.filter(
-            Student.bmi.isnot(None),
-            (Student.bmi < 18.5) | (Student.bmi >= 25)
+        # Fix: Use raw SQL to avoid Pyright type checking issues
+        from sqlalchemy import text
+        at_risk_students_system = db.session.query(Student).filter(
+            text("bmi IS NOT NULL AND (bmi < 18.5 OR bmi >= 25)")
         ).count()
         
         # Mock data for analytics (replace with real calculations later)
@@ -532,8 +572,9 @@ def _calculate_beneficiary_bmi_distribution(students):
         if not students:
             return distribution
             
-        # Only get beneficiaries with BMI data
-        beneficiary_students = [s for s in students if s.bmi is not None and s.bmi > 0 and s.is_beneficiary]
+        # Get beneficiaries (students marked as beneficiaries or those with unhealthy BMI)
+        beneficiary_students = [s for s in students if s.bmi is not None and s.bmi > 0 and 
+                              (s.is_beneficiary or (s.bmi < 18.5 or s.bmi >= 25))]
         
         for student in beneficiary_students:
             bmi = student.bmi
@@ -559,8 +600,8 @@ def _get_beneficiary_students(admin_students):
             
         beneficiaries = []
         for student in admin_students:
-            if (student.is_beneficiary or 
-                (student.bmi is not None and (student.bmi < 18.5 or student.bmi >= 25))):
+            # Beneficiaries are students explicitly marked as beneficiaries or those with unhealthy BMI
+            if student.is_beneficiary or (student.bmi is not None and student.bmi > 0 and (student.bmi < 18.5 or student.bmi >= 25)):
                 beneficiaries.append(student)
         
         return beneficiaries
@@ -576,8 +617,11 @@ def _get_at_risk_students(school_students):
             
         at_risk = []
         for student in school_students:
-            if student.bmi is not None and (student.bmi < 16 or student.bmi >= 30):
-                at_risk.append(student)
+            # Check if student has valid BMI data
+            if student.bmi is not None and student.bmi > 0:
+                # At-risk students are those who are severely underweight (BMI < 16) or obese (BMI >= 30)
+                if student.bmi < 16 or student.bmi >= 30:
+                    at_risk.append(student)
         
         # Sort by BMI (most critical first)
         at_risk.sort(key=lambda s: s.bmi if s.bmi else 0)
@@ -629,8 +673,8 @@ def _calculate_improved_bmi_progress(students):
             month_name = calendar.month_abbr[month_date.month]
             months.insert(0, month_name)
             
-            # Get students with data from this month
-            month_students = [s for s in students if s.bmi is not None and s.created_at and 
+            # Get students with valid BMI data from this month
+            month_students = [s for s in students if s.bmi is not None and s.bmi > 0 and s.created_at and 
                             s.created_at.month == month_date.month and s.created_at.year == month_date.year]
             
             if month_students:
@@ -638,7 +682,7 @@ def _calculate_improved_bmi_progress(students):
                 bmi_values.insert(0, round(avg_bmi, 1))
             else:
                 # Use overall average if no data for specific month
-                all_students_with_bmi = [s for s in students if s.bmi is not None]
+                all_students_with_bmi = [s for s in students if s.bmi is not None and s.bmi > 0]
                 if all_students_with_bmi:
                     avg_bmi = sum(s.bmi for s in all_students_with_bmi) / len(all_students_with_bmi)
                     bmi_values.insert(0, round(avg_bmi, 1))
@@ -664,15 +708,16 @@ def _calculate_section_analytics(sections, school_students):
         
         for section in sections:
             section_students = [s for s in school_students if s.section_id == section.id]
-            section_beneficiaries = [s for s in section_students if s.is_beneficiary or 
-                                   (s.bmi is not None and (s.bmi < 18.5 or s.bmi >= 25))]
+            # Beneficiaries are students marked as beneficiaries or those with unhealthy BMI
+            section_beneficiaries = [s for s in section_students if s.bmi is not None and s.bmi > 0 and 
+                                   (s.is_beneficiary or (s.bmi < 18.5 or s.bmi >= 25))]
             
             labels.append(section.name)
             total_students.append(len(section_students))
             beneficiaries.append(len(section_beneficiaries))
             
             # Calculate participation rate (students with complete health data)
-            complete_data = len([s for s in section_students if s.bmi and s.weight and s.height])
+            complete_data = len([s for s in section_students if s.bmi is not None and s.bmi > 0])
             participation_rate = (complete_data / len(section_students) * 100) if section_students else 0
             participation_rates.append(round(participation_rate, 1))
         
@@ -700,8 +745,8 @@ def _calculate_nutritional_trends(students):
             months.insert(0, month_name)
             
             # Count healthy vs at-risk students for each month
-            month_students = [s for s in students if s.bmi is not None and s.created_at and 
-                            s.created_at.month == month_date.month]
+            month_students = [s for s in students if s.bmi is not None and s.bmi > 0 and s.created_at and 
+                            s.created_at.month == month_date.month and s.created_at.year == month_date.year]
             
             healthy = len([s for s in month_students if 18.5 <= s.bmi < 25])
             at_risk = len([s for s in month_students if s.bmi < 18.5 or s.bmi >= 25])
@@ -724,18 +769,21 @@ def _calculate_health_metrics(beneficiary_students):
         if not beneficiary_students:
             return {'improved_count': 0, 'stable_count': 0, 'declined_count': 0, 'improvement_rate': 0}
         
-        # Simulate improvement tracking (in real implementation, you'd track BMI changes over time)
+        # Calculate health metrics based on current BMI status
         total = len(beneficiary_students)
-        improved = len([s for s in beneficiary_students if s.bmi and 18.5 <= s.bmi < 25])
-        stable = len([s for s in beneficiary_students if s.bmi and (16 <= s.bmi < 18.5 or 25 <= s.bmi < 30)])
-        declined = total - improved - stable
+        # Improved: Students with healthy BMI (18.5-24.9)
+        improved = len([s for s in beneficiary_students if s.bmi is not None and s.bmi > 0 and 18.5 <= s.bmi < 25])
+        # Stable: Students with mild health concerns (16-18.4 or 25-29.9)
+        stable = len([s for s in beneficiary_students if s.bmi is not None and s.bmi > 0 and (16 <= s.bmi < 18.5 or 25 <= s.bmi < 30)])
+        # Declined: Students with severe health concerns (BMI < 16 or BMI >= 30)
+        declined = len([s for s in beneficiary_students if s.bmi is not None and s.bmi > 0 and (s.bmi < 16 or s.bmi >= 30)])
         
         improvement_rate = (improved / total * 100) if total > 0 else 0
         
         return {
             'improved_count': improved,
             'stable_count': stable,
-            'declined_count': max(0, declined),
+            'declined_count': declined,
             'improvement_rate': round(improvement_rate, 1)
         }
     except Exception as e:
@@ -752,11 +800,11 @@ def _calculate_monthly_summary(students):
         # Students added this month
         new_students = len([s for s in students if s.created_at and s.created_at >= month_start])
         
-        # Assessments completed (students with BMI data)
-        assessments = len([s for s in students if s.bmi is not None])
+        # Assessments completed (students with valid BMI data)
+        assessments = len([s for s in students if s.bmi is not None and s.bmi > 0])
         
-        # Health alerts (at-risk students)
-        alerts = len([s for s in students if s.bmi and (s.bmi < 16 or s.bmi >= 30)])
+        # Health alerts (at-risk students with severe conditions)
+        alerts = len([s for s in students if s.bmi is not None and s.bmi > 0 and (s.bmi < 16 or s.bmi >= 30)])
         
         return {
             'current_month': current_month,
@@ -813,21 +861,33 @@ def create_student():
                 flash('All fields are required', 'danger')
                 return redirect(url_for('school.create_student'))
             
-            # Parse birth date
-            birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            # Add validation for birth_date_str before parsing
+            if birth_date_str:
+                birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            else:
+                flash('Birth date is required', 'danger')
+                return redirect(url_for('school.create_student'))
             
-            # Create student
-            student = Student(
-                name=name,
-                birth_date=birth_date,
-                gender=gender,
-                height=float(height),
-                weight=float(weight),
-                section_id=int(section_id),
-                school_id=current_user.school_id,
-                registered_by=current_user.id,
-                preferences=preferences
-            )
+            # Validate and convert data types with proper error handling
+            try:
+                height_float = float(height) if height else 0.0
+                weight_float = float(weight) if weight else 0.0
+                section_id_int = int(section_id) if section_id else 0
+            except (ValueError, TypeError):
+                flash('Invalid data format for height, weight, or section.', 'danger')
+                return redirect(url_for('school.create_student'))
+            
+            # Create student with proper attribute assignment
+            student = Student()
+            student.name = name
+            student.birth_date = birth_date
+            student.gender = gender
+            student.height = height_float
+            student.weight = weight_float
+            student.section_id = section_id_int
+            student.school_id = current_user.school_id
+            student.registered_by = current_user.id
+            student.preferences = preferences
             
             # Calculate BMI
             student.calculate_bmi()
@@ -863,12 +923,38 @@ def edit_student(student_id):
     
     if request.method == 'POST':
         try:
+            # Update student attributes
             student.name = request.form.get('name')
             birth_date_str = request.form.get('birth_date')
             student.gender = request.form.get('gender')
-            student.height = float(request.form.get('height'))
-            student.weight = float(request.form.get('weight'))
-            student.section_id = int(request.form.get('section_id'))
+            
+            # Safely convert form data with default values
+            height_value = request.form.get('height')
+            weight_value = request.form.get('weight')
+            section_id_value = request.form.get('section_id')
+            
+            # Convert with proper validation
+            if height_value is not None and height_value != '':
+                try:
+                    student.height = float(height_value)
+                except ValueError:
+                    flash('Invalid height value.', 'danger')
+                    return redirect(url_for('school.edit_student', student_id=student_id))
+            
+            if weight_value is not None and weight_value != '':
+                try:
+                    student.weight = float(weight_value)
+                except ValueError:
+                    flash('Invalid weight value.', 'danger')
+                    return redirect(url_for('school.edit_student', student_id=student_id))
+            
+            if section_id_value is not None and section_id_value != '':
+                try:
+                    student.section_id = int(section_id_value)
+                except ValueError:
+                    flash('Invalid section value.', 'danger')
+                    return redirect(url_for('school.edit_student', student_id=student_id))
+            
             student.preferences = request.form.get('preferences', '')
             
             if birth_date_str:

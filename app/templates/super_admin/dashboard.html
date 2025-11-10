@@ -1281,28 +1281,28 @@
                                 <span class="age-range">5-8 years</span>
                                 <span class="age-count">{{ age_groups['5-8'] }}</span>
                                 <div class="age-bar">
-                                    <div class="age-fill" style="width: {{ (age_groups['5-8'] / total_students * 100) if total_students > 0 else 0 }}%"></div>
+                                    <div class="age-fill" data-width="{% if total_students > 0 %}{{ (age_groups['5-8'] / total_students * 100) }}{% else %}0{% endif %}"></div>
                                 </div>
                             </div>
                             <div class="age-group-item">
                                 <span class="age-range">9-12 years</span>
                                 <span class="age-count">{{ age_groups['9-12'] }}</span>
                                 <div class="age-bar">
-                                    <div class="age-fill" style="width: {{ (age_groups['9-12'] / total_students * 100) if total_students > 0 else 0 }}%"></div>
+                                    <div class="age-fill" data-width="{% if total_students > 0 %}{{ (age_groups['9-12'] / total_students * 100) }}{% else %}0{% endif %}"></div>
                                 </div>
                             </div>
                             <div class="age-group-item">
                                 <span class="age-range">13-16 years</span>
                                 <span class="age-count">{{ age_groups['13-16'] }}</span>
                                 <div class="age-bar">
-                                    <div class="age-fill" style="width: {{ (age_groups['13-16'] / total_students * 100) if total_students > 0 else 0 }}%"></div>
+                                    <div class="age-fill" data-width="{% if total_students > 0 %}{{ (age_groups['13-16'] / total_students * 100) }}{% else %}0{% endif %}"></div>
                                 </div>
                             </div>
                             <div class="age-group-item">
                                 <span class="age-range">17+ years</span>
                                 <span class="age-count">{{ age_groups['17+'] }}</span>
                                 <div class="age-bar">
-                                    <div class="age-fill" style="width: {{ (age_groups['17+'] / total_students * 100) if total_students > 0 else 0 }}%"></div>
+                                    <div class="age-fill" data-width="{% if total_students > 0 %}{{ (age_groups['17+'] / total_students * 100) }}{% else %}0{% endif %}"></div>
                                 </div>
                             </div>
                         </div>
@@ -1328,7 +1328,7 @@
                                         <span class="gender-percentage">{{ "%.1f"|format((gender.count / total_students * 100) if total_students > 0 else 0) }}%</span>
                                     </div>
                                     <div class="gender-bar">
-                                        <div class="gender-fill" style="width: {{ (gender.count / total_students * 100) if total_students > 0 else 0 }}%"></div>
+                                        <div class="gender-fill" data-width="{% if total_students > 0 %}{{ (gender.count / total_students * 100) }}{% else %}0{% endif %}"></div>
                                     </div>
                                     <span class="gender-count">{{ gender.count }} students</span>
                                 </div>
@@ -1399,10 +1399,6 @@
                                 <span class="stat-item">{{ system_metrics.students_with_bmi }} With BMI Data</span>
                                 <span class="stat-item">{{ "%.1f"|format(system_metrics.beneficiary_coverage) }}% Coverage</span>
                             </div>
-                            <button class="report-btn">
-                                <i class="bi bi-download"></i>
-                                Download Report
-                            </button>
                         </div>
                     </div>
                     
@@ -1418,10 +1414,6 @@
                                 <span class="stat-item">{{ "%.1f"|format(total_students / total_schools if total_schools > 0 else 0) }} Avg Students</span>
                                 <span class="stat-item">{{ system_metrics.at_risk_students }} At Risk</span>
                             </div>
-                            <button class="report-btn">
-                                <i class="bi bi-eye"></i>
-                                View Details
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1573,7 +1565,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Student Registrations Chart
     const registrationsCtx = document.getElementById('registrationsChart').getContext('2d');
-    const monthlyData = {{ monthly_registrations | tojson }};
+    const monthlyData = JSON.parse('{{ monthly_registrations | tojson | safe }}');
     
     // Process monthly data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1625,9 +1617,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Student Status Chart
     const statusCtx = document.getElementById('statusChart').getContext('2d');
-    const activeStudents = {{ total_students - system_metrics.at_risk_students }};
-    const atRiskStudents = {{ system_metrics.at_risk_students }};
-    const beneficiaries = {{ beneficiary_distribution.beneficiaries }};
+    const activeStudents = parseInt("{{ total_students - system_metrics.at_risk_students }}");
+    const atRiskStudents = parseInt("{{ system_metrics.at_risk_students }}");
+    const beneficiaries = parseInt("{{ beneficiary_distribution.beneficiaries }}");
     
     new Chart(statusCtx, {
         type: 'doughnut',
@@ -1661,7 +1653,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Health Status Analysis Chart
     const healthStatusCtx = document.getElementById('healthStatusChart').getContext('2d');
-    const bmiData = {{ bmi_distribution | tojson }};
+    const bmiData = {
+        normal: parseInt("{{ bmi_distribution.normal or 0 }}"),
+        underweight: parseInt("{{ bmi_distribution.underweight or 0 }}"),
+        overweight: parseInt("{{ bmi_distribution.overweight or 0 }}"),
+        obese: parseInt("{{ bmi_distribution.obese or 0 }}"),
+        severely_underweight: parseInt("{{ bmi_distribution.severely_underweight or 0 }}")
+    };
     
     new Chart(healthStatusCtx, {
         type: 'doughnut',
@@ -1676,18 +1674,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     bmiData.severely_underweight
                 ],
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(239, 68, 68, 0.8)',
-                    'rgba(220, 38, 38, 0.8)',
-                    'rgba(185, 28, 28, 0.8)'
+                    'rgba(40, 167, 69, 0.8)',   // Normal - Green
+                    'rgba(255, 193, 7, 0.8)',   // Underweight - Yellow
+                    'rgba(253, 126, 20, 0.8)',  // Overweight - Orange
+                    'rgba(220, 53, 69, 0.8)',   // Obese - Red
+                    'rgba(108, 117, 125, 0.8)' // Severely Underweight - Grey
                 ],
                 borderColor: [
-                    'rgba(16, 185, 129, 1)',
-                    'rgba(245, 158, 11, 1)',
-                    'rgba(239, 68, 68, 1)',
-                    'rgba(220, 38, 38, 1)',
-                    'rgba(185, 28, 28, 1)'
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(253, 126, 20, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(108, 117, 125, 1)'
                 ],
                 borderWidth: 2
             }]
@@ -1712,7 +1710,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // School Performance Chart
     const schoolPerformanceCtx = document.getElementById('schoolPerformanceChart').getContext('2d');
-    const schoolData = {{ school_stats | tojson }};
+    const schoolData = JSON.parse('{{ school_stats | tojson | safe }}');
     
     const schoolNames = schoolData.map(school => school.name);
     const studentCounts = schoolData.map(school => school.student_count);
@@ -1773,7 +1771,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Age Distribution Chart
     const ageDistributionCtx = document.getElementById('ageDistributionChart').getContext('2d');
-    const ageData = {{ age_groups | tojson }};
+    const ageData = JSON.parse('{{ age_groups | tojson | safe }}');
     
     new Chart(ageDistributionCtx, {
         type: 'pie',
@@ -1818,7 +1816,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Gender Distribution Chart
     const genderDistributionCtx = document.getElementById('genderDistributionChart').getContext('2d');
-    const genderData = {{ gender_distribution | tojson }};
+    const genderData = JSON.parse('{{ gender_distribution | tojson | safe }}');
     
     new Chart(genderDistributionCtx, {
         type: 'doughnut',

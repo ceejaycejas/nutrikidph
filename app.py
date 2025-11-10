@@ -86,7 +86,7 @@ def main():
         setup_environment()
 
         # Use the global app created above
-        global app
+        # Removed global app declaration since it's not needed
 
         # Find available port
         port = find_available_port()
@@ -143,5 +143,3 @@ if __name__ == '__main__':
         print(f"\n❌ Unexpected error: {e}")
         input("Press Enter to exit...")
         sys.exit(1)
-
-

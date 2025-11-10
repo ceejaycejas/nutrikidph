@@ -89,12 +89,15 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        justify-content: space-between; /* search left, button right */
+        width: 100%;
     }
     
     .search-container {
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex: 1; /* allow growth */
     }
     
     .search-box {
@@ -103,7 +106,8 @@
         padding: 0.75rem 1rem;
         display: flex;
         align-items: center;
-        width: 300px;
+        width: 100%;
+        max-width: 820px;
         border: 2px solid #f1f3f4;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         transition: all 0.3s ease;
@@ -456,41 +460,13 @@
         </div>
     </div>
     
-    <!-- Stats Bar -->
+    <!-- Actions Bar (Search left, Add button right) -->
     <div class="stats-bar">
-        <div class="stats-left">
-            <div class="stats-item">
-                <span class="stats-number">{{ schools|length }}</span>
-                <span class="stats-label">Total Schools</span>
-            </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set active_count = 0 %}
-                    {% for school in schools %}
-                        {% if school.users|length > 0 %}
-                            {% set active_count = active_count + 1 %}
-                        {% endif %}
-                    {% endfor %}
-                    {{ active_count }}
-                </span>
-                <span class="stats-label">Active Schools</span>
-            </div>
-            <div class="stats-item">
-                <span class="stats-number">
-                    {% set total_admins = 0 %}
-                    {% for school in schools %}
-                        {% set total_admins = total_admins + school.users|length %}
-                    {% endfor %}
-                    {{ total_admins }}
-                </span>
-                <span class="stats-label">Total Admins</span>
-            </div>
-        </div>
         <div class="action-buttons">
             <div class="search-container">
                 <form action="{{ url_for('super_admin.schools') }}" method="GET" class="search-box mb-0">
                     <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Search schools..." name="search_query" value="{{ search_query if search_query else '' }}">
+                    <input id="superAdminSchoolSearch" type="text" placeholder="Search schools..." name="search_query" value="{{ search_query if search_query else '' }}">
                     <button type="submit" style="display: none;"></button>
                 </form>
             </div>
@@ -585,6 +561,28 @@
             </table>
         </div>
     </div>
+<script>
+// Auto-submit search on input (debounced) to mirror Manage Admins behavior
+(function() {
+    const input = document.getElementById('superAdminSchoolSearch');
+    if (!input) return;
+    let t;
+    input.addEventListener('input', function() {
+        clearTimeout(t);
+        t = setTimeout(function() {
+            const params = new URLSearchParams(window.location.search);
+            const val = input.value || '';
+            if (val) {
+                params.set('search_query', val);
+            } else {
+                params.delete('search_query');
+            }
+            const url = window.location.pathname + '?' + params.toString();
+            window.location.assign(url);
+        }, 350);
+    });
+})();
+</script>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -341,7 +341,7 @@ def print_deployment_summary():
     print("├── static/             # Static files (CSS, JS, images)")
     print("├── templates/          # HTML templates")
     print("├── .env               # Environment configuration")
-    print("├── run.py             # Application entry point")
+    print("├── app.py             # Application entry point")
     print("└── config.py          # Configuration settings")
     print("\n🛠️  TROUBLESHOOTING:")
     print("- If MySQL connection fails, check if MySQL is running")

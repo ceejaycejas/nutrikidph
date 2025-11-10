@@ -19,6 +19,7 @@ python-dotenv==1.1.1
 # Data Processing & Export
 pandas==2.3.1
 xlsxwriter==3.2.5
+reportlab==4.0.9
 
 # Additional Utilities
 click==8.1.7

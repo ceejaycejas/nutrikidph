@@ -6,6 +6,7 @@
     <title>Login - NutriKid</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -317,18 +318,151 @@
             50% { transform: translate(30px, 30px); }
         }
 
-        /* Responsive */
+        /* Responsive - Mobile Layout */
         @media (max-width: 768px) {
-            .form-panel {
-                transform: translateY(100px) !important;
-                animation: slideInUpBig 1s ease-out 0.5s forwards !important;
+            body {
+                align-items: flex-start;
+                padding: 0;
             }
-
-            @keyframes slideInUpBig {
+            
+            .login-container {
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .login-container > div {
+                flex-direction: column;
+                max-width: 100%;
+                border-radius: 0;
+                margin: 0;
+                min-height: 100vh;
+            }
+            
+            /* Welcome Panel - Show on Mobile at Top */
+            .welcome-panel {
+                display: flex !important;
+                width: 100% !important;
+                padding: 2rem 1.5rem !important;
+                min-height: 35vh;
+                order: 1;
+                transform: translateY(0) !important;
+                animation: fadeInDown 0.8s ease-out 0.2s forwards !important;
+            }
+            
+            @keyframes fadeInDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
                 to {
                     opacity: 1;
                     transform: translateY(0);
                 }
+            }
+            
+            .welcome-panel img {
+                width: 64px !important;
+                height: 64px !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .welcome-text-1 {
+                font-size: 1.5rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            .welcome-text-2 {
+                font-size: 0.9rem !important;
+                margin-bottom: 1rem !important;
+                line-height: 1.5;
+            }
+            
+            .welcome-text-3 {
+                font-size: 0.8rem !important;
+            }
+            
+            /* Form Panel - Below Welcome on Mobile */
+            .form-panel {
+                width: 100% !important;
+                padding: 2rem 1.5rem !important;
+                order: 2;
+                transform: translateY(0) !important;
+                animation: slideInUpBig 0.8s ease-out 0.3s forwards !important;
+                background: white;
+                flex: 1;
+                justify-content: flex-start;
+            }
+
+            @keyframes slideInUpBig {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .form-title {
+                font-size: 1.75rem !important;
+                margin-bottom: 1.5rem !important;
+            }
+            
+            .form-panel form {
+                max-width: 100%;
+            }
+            
+            .form-panel input {
+                padding: 0.875rem 1rem !important;
+                font-size: 1rem !important;
+            }
+            
+            .form-remember {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            
+            .form-remember button {
+                align-self: flex-end;
+            }
+            
+            .login-button {
+                padding: 0.875rem !important;
+                font-size: 1rem !important;
+                margin-top: 0.5rem;
+            }
+        }
+        
+        /* Extra Small Devices */
+        @media (max-width: 480px) {
+            .welcome-panel {
+                padding: 1.5rem 1rem !important;
+                min-height: 30vh;
+            }
+            
+            .welcome-panel img {
+                width: 56px !important;
+                height: 56px !important;
+            }
+            
+            .welcome-text-1 {
+                font-size: 1.25rem !important;
+            }
+            
+            .welcome-text-2 {
+                font-size: 0.85rem !important;
+            }
+            
+            .form-panel {
+                padding: 1.5rem 1rem !important;
+            }
+            
+            .form-title {
+                font-size: 1.5rem !important;
             }
         }
     </style>
@@ -380,8 +514,20 @@
         })();
     </script>
     <div class="login-container">
-        <div class="flex w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Left: Login Form (White) -->
+        <div class="flex flex-col md:flex-row w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Welcome Panel (Blue) - Top on Mobile, Right on Desktop -->
+            <div class="welcome-panel flex w-full md:w-1/2 bg-blue-600 flex-col items-center justify-center p-8 text-white">
+                <div onclick="window.location.href='{{ url_for('main.index') }}';" style="cursor: pointer; z-index: 999999; position: relative;" title="Back to Home">
+                    <img src="{{ url_for('static', filename='img/LOGO.png') }}" alt="NutriKid Logo" class="logo-animate w-24 h-24 mb-6 rounded-full bg-white p-2" style="cursor: pointer;">
+                </div>
+                <h2 class="welcome-text-1 text-2xl font-bold mb-2">Welcome to NutriKid!</h2>
+                <p class="welcome-text-2 mb-6 text-center">School Nutrition Management System<br>Please contact your administrator for account access</p>
+                <div class="welcome-text-3 text-center text-sm opacity-75">
+                    <p>For new school registration,<br>contact the Super Administrator</p>
+                </div>
+            </div>
+            
+            <!-- Login Form (White) - Below Welcome on Mobile, Left on Desktop -->
             <div class="form-panel w-full md:w-1/2 p-8 flex flex-col justify-center">
                 <h2 class="form-title text-3xl font-bold text-gray-800 mb-6 text-center">Sign in</h2>
                 
@@ -418,8 +564,15 @@
                 {% endwith %}
                 
                 <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
-                    <input name="email" type="email" placeholder="Email" required class="form-input-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <input name="password" type="password" placeholder="Password" required class="form-input-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <div class="relative">
+                        <input name="email" type="email" placeholder="Email" required class="form-input-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div class="relative">
+                        <input id="password-input" name="password" type="password" placeholder="Password" required class="form-input-2 w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none" style="background: none; border: none; cursor: pointer; padding: 0.5rem;">
+                            <i id="password-toggle-icon" class="bi bi-eye-slash" style="font-size: 1.2rem;"></i>
+                        </button>
+                    </div>
                     <div class="form-remember flex items-center justify-between text-sm">
                         <div class="flex items-center">
                             <input id="remember-me" name="remember" type="checkbox" class="form-checkbox text-blue-600 mr-2">
@@ -432,20 +585,25 @@
                     <button type="submit" class="form-submit login-button w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition relative z-10">LOG IN</button>
                 </form>
             </div>
-            <!-- Right: Welcome Panel (Blue) -->
-            <div class="welcome-panel hidden md:flex w-1/2 bg-blue-600 flex-col items-center justify-center p-8 text-white">
-                <div onclick="window.location.href='{{ url_for('main.index') }}';" style="cursor: pointer; z-index: 999999; position: relative;" title="Back to Home">
-                    <img src="{{ url_for('static', filename='img/LOGO.png') }}" alt="NutriKid Logo" class="logo-animate w-24 h-24 mb-6 rounded-full bg-white p-2" style="cursor: pointer;">
-                </div>
-                <h2 class="welcome-text-1 text-2xl font-bold mb-2">Welcome to NutriKid!</h2>
-                <p class="welcome-text-2 mb-6 text-center">School Nutrition Management System<br>Please contact your administrator for account access</p>
-                <div class="welcome-text-3 text-center text-sm opacity-75">
-                    <p>For new school registration,<br>contact the Super Administrator</p>
-                </div>
-            </div>
         </div>
     </div>
     <script>
+        // Password toggle function
+        function togglePassword() {
+            const passwordInput = document.getElementById('password-input');
+            const toggleIcon = document.getElementById('password-toggle-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        }
+        
         // Enhanced interactivity
         document.addEventListener('DOMContentLoaded', function() {
             // FORCE LOGO CLICKABLE

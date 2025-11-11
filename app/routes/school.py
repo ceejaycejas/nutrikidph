@@ -282,8 +282,8 @@ def _get_admin_dashboard_data(recent_activities, recent_activity_count, today_lo
         total_students = len(school_students) if school_students else 0
         total_students_admin = len(admin_students) if admin_students else 0
         
-        # Calculate BMI distribution for beneficiaries only
-        bmi_distribution = _calculate_beneficiary_bmi_distribution(school_students)
+        # Calculate BMI distribution for all students with BMI data
+        bmi_distribution = _calculate_student_bmi_distribution(school_students)
         
         # Get beneficiary and at-risk students with validation
         try:
@@ -563,51 +563,6 @@ def _calculate_accurate_bmi_distribution(students):
     except Exception as e:
         print(f"BMI distribution calculation error: {str(e)}")
         return {'normal': 0, 'wasted': 0, 'severely_wasted': 0, 'overweight': 0, 'obese': 0}
-
-def _calculate_beneficiary_bmi_distribution(students):
-    """Calculate BMI distribution for beneficiaries only"""
-    try:
-        distribution = {'normal': 0, 'wasted': 0, 'severely_wasted': 0, 'overweight': 0}
-        
-        if not students:
-            return distribution
-            
-        # Get beneficiaries (students marked as beneficiaries or those with unhealthy BMI)
-        beneficiary_students = [s for s in students if s.bmi is not None and s.bmi > 0 and 
-                              (s.is_beneficiary or (s.bmi < 18.5 or s.bmi >= 25))]
-        
-        for student in beneficiary_students:
-            bmi = student.bmi
-            if bmi < 16:
-                distribution['severely_wasted'] += 1
-            elif bmi < 18.5:
-                distribution['wasted'] += 1
-            elif bmi < 25:
-                distribution['normal'] += 1
-            else:
-                distribution['overweight'] += 1
-        
-        return distribution
-    except Exception as e:
-        print(f"Beneficiary BMI distribution calculation error: {str(e)}")
-        return {'normal': 0, 'wasted': 0, 'severely_wasted': 0, 'overweight': 0}
-
-def _get_beneficiary_students(admin_students):
-    """Get beneficiary students with proper validation"""
-    try:
-        if not admin_students:
-            return []
-            
-        beneficiaries = []
-        for student in admin_students:
-            # Beneficiaries are students explicitly marked as beneficiaries or those with unhealthy BMI
-            if student.is_beneficiary or (student.bmi is not None and student.bmi > 0 and (student.bmi < 18.5 or student.bmi >= 25)):
-                beneficiaries.append(student)
-        
-        return beneficiaries
-    except Exception as e:
-        print(f"Beneficiary students calculation error: {str(e)}")
-        return []
 
 def _get_at_risk_students(school_students):
     """Get at-risk students (severely underweight or obese)"""
@@ -1015,3 +970,47 @@ def student_detail(student_id):
     
     student = Student.query.filter_by(id=student_id, school_id=current_user.school_id).first_or_404()
     return render_template('admin/student_detail.html', student=student)
+
+def _calculate_student_bmi_distribution(students):
+    """Calculate BMI distribution for all students with BMI data"""
+    try:
+        distribution = {'normal': 0, 'wasted': 0, 'severely_wasted': 0, 'overweight': 0}
+        
+        if not students:
+            return distribution
+            
+        # Get all students with valid BMI data
+        students_with_bmi = [s for s in students if s.bmi is not None and s.bmi > 0]
+        
+        for student in students_with_bmi:
+            bmi = student.bmi
+            if bmi < 16:
+                distribution['severely_wasted'] += 1
+            elif bmi < 18.5:
+                distribution['wasted'] += 1
+            elif bmi < 25:
+                distribution['normal'] += 1
+            else:
+                distribution['overweight'] += 1
+        
+        return distribution
+    except Exception as e:
+        print(f"BMI distribution calculation error: {str(e)}")
+        return {'normal': 0, 'wasted': 0, 'severely_wasted': 0, 'overweight': 0}
+
+def _get_beneficiary_students(admin_students):
+    """Get beneficiary students with proper validation"""
+    try:
+        if not admin_students:
+            return []
+            
+        beneficiaries = []
+        for student in admin_students:
+            # Beneficiaries are students explicitly marked as beneficiaries or those with unhealthy BMI
+            if student.is_beneficiary or (student.bmi is not None and student.bmi > 0 and (student.bmi < 18.5 or student.bmi >= 25)):
+                beneficiaries.append(student)
+        
+        return beneficiaries
+    except Exception as e:
+        print(f"Beneficiary students calculation error: {str(e)}")
+        return []

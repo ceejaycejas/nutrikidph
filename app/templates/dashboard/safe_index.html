@@ -195,7 +195,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5><i class="bi bi-pie-chart me-2"></i>BMI Distribution of Beneficiaries</h5>
+                                    <h5><i class="bi bi-pie-chart me-2"></i>BMI Distribution of Students</h5>
                                 </div>
                                 <div class="card-body">
                                     {% if bmi_distribution.normal > 0 or bmi_distribution.wasted > 0 or bmi_distribution.severely_wasted > 0 or bmi_distribution.overweight > 0 %}
@@ -227,7 +227,7 @@
                                     {% else %}
                                         <div class="text-center py-4">
                                             <i class="bi bi-pie-chart" style="font-size: 3rem; color: #bdc3c7;"></i>
-                                            <p class="mt-2 text-muted">No BMI data available for beneficiaries</p>
+                                            <p class="mt-2 text-muted">No BMI data available for students</p>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -287,7 +287,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// BMI Distribution Chart for Beneficiaries
+// BMI Distribution Chart for Students
 document.addEventListener('DOMContentLoaded', function() {
     // Only initialize chart if the element exists and we have data
     const chartElement = document.getElementById('bmiBeneficiaryChart');
